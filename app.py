@@ -16,7 +16,7 @@ st.sidebar.header("Фільтри")
 brands = st.sidebar.multiselect("Бренд", options=sorted(df['brand'].unique()), default=sorted(df['brand'].unique())[:5])
 price_min, price_max = st.sidebar.slider("Ціна (USD)", int(df['price_usd'].min()), int(df['price_usd'].max()), (int(df['price_usd'].min()), int(df['price_usd'].max())))
 screen_min, screen_max = st.sidebar.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
-ai_cpu = st.sidebar.selectbox("AI CPU", options=["Усі","Із AI", "Без AI"])
+ai_cpu = st.sidebar.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
 
 # --- Фільтрація ---
 filtered = filter_data(df, brands=brands, price_range=(price_min, price_max), screen_range=(screen_min, screen_max), ai_cpu=ai_cpu)
@@ -40,9 +40,20 @@ st.plotly_chart(fig1, use_container_width=True)
 # --- Графік: тренди за роками ---
 st.subheader("Тренди характеристик за роками")
 trend_df = compute_trends(df)
-fig2 = px.line(trend_df, x='year', y='avg_price', color='metric', markers=True,
-               title='Тренди: середня ціна / середня автономність / частка OLED')
+fig2 = px.line(
+    trend_df,
+    x='year',
+    y='value',
+    color='metric',
+    markers=True,
+    title='Тренди: середня ціна / середня автономність / частка OLED'
+)
 st.plotly_chart(fig2, use_container_width=True)
 
 # --- Експорт CSV ---
-st.download_button("Експорт відфільтрованих результатів у CSV", data=filtered.to_csv(index=False).encode('utf-8'), file_name="filtered_laptops.csv", mime="text/csv")
+st.download_button(
+    "Експорт відфільтрованих результатів у CSV",
+    data=filtered.to_csv(index=False).encode('utf-8'),
+    file_name="filtered_laptops.csv",
+    mime="text/csv"
+)

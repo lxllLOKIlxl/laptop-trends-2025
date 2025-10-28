@@ -1,1 +1,7 @@
-
+streamlit>=1.24
+pandas>=1.5
+numpy>=1.24
+plotly>=5.10
+scikit-learn>=1.2   # опціонально, якщо будуть моделі/кластеризація
+beautifulsoup4>=4.12  # опціонально для скрейпінгу
+requests>=2.28

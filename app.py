@@ -12,61 +12,79 @@ st.set_page_config(page_title="Інтерактивний вебдодаток �
 CARD_CSS = """
 <style>
 :root{
-  --card-bg: #ffffff;
-  --card-border: rgba(0,0,0,0.06);
-  --accent: #0f62fe;
-  --muted: #5a5a5a;
+  --page-bg: #f5f7fb;
+  --container-bg: #ffffff;
+  --card-border: #d7eefc;
+  --card-shadow: 0 6px 20px rgba(18,36,63,0.06);
+  --accent: #0b6bff;
+  --price-color: #d8232a;
+  --muted: #6b7280;
 }
 body {
-  background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 100%);
+  background: var(--page-bg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
-.app-title {
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-.app-title h1 {
-  margin:0;
-  font-size:34px;
-  letter-spacing: -0.5px;
+
+/* Центруємо основний блок і даємо відступи */
+.block-container {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-top: 18px !important;
+  padding-bottom: 40px !important;
 }
 
-/* Карта: зменшені відступи, компактніша типографіка */
+.app-title { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+.app-title h1 { margin:0; font-size:28px; font-weight:700; }
+.small-muted { color:var(--muted); font-size:13px; }
+
+/* Карта (card) */
 .card {
-  border-radius:12px;
-  background:var(--card-bg);
-  border:1px solid var(--card-border);
-  box-shadow: 0 4px 18px rgba(18,36,63,0.06);
-  padding:8px;
+  border-radius:10px;
+  background: var(--container-bg);
+  border: 1.5px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding:12px;
   overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  height:100%;
 }
 
-/* Квадратні превʼю: aspect-ratio гарантує квадрат, object-fit: cover запобігає розтягуванню */
+/* Квадратне превʼю */
 .card .thumb {
   width:100%;
-  aspect-ratio: 1 / 1;    /* square */
-  object-fit: cover;      /* ключ: обрізає, а не розтягує */
-  border-radius:8px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius:6px;
   display:block;
-  margin-bottom:8px;
-  max-height:320px;       /* обмеження, можна зменшити при потребі */
+  margin-bottom:10px;
+  background:#f7f9fb;
 }
 
-.card .meta { font-size:13px; color:var(--muted); margin-bottom:6px; }
-.card .title { font-weight:700; font-size:15px; margin-bottom:6px; }
-.card .price { color: #0b6bff; font-weight:700; font-size:15px; }
-.grid-row { gap: 14px; }
-.pager { display:flex; gap:8px; align-items:center; }
-.small-muted { color:#6b7280; font-size:13px; }
-.filters-block { padding:8px 4px; }
-.empty-state { text-align:center; padding:40px 0; color:#6b7280; }
+.card .title { font-weight:700; font-size:14px; margin-bottom:6px; color:#111827; }
+.card .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
+.card .price { color: var(--price-color); font-weight:800; font-size:16px; margin-top:auto; }
+.card .card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; }
+.card .buy-btn { background: var(--accent); color: #fff; padding:8px 12px; border-radius:8px; font-weight:700; text-decoration:none; font-size:13px; }
+.small-note { font-size:11px; color:var(--muted); }
+
+/* Невеликі відступи колонок у Streamlit */
+.stColumns > div {
+  padding-left:6px;
+  padding-right:6px;
+}
 </style>
 """
 
 def sanitize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Позбуваємось сирих 'http' у всіх текстових стовпцях, щоб уникнути автолінкування в браузері.
+       Пропускаємо колонку 'thumbnail' — її ми нормалізували в завантаженні даних.
+    """
     df = df.copy()
     for col in df.select_dtypes(include=['object', 'string']).columns:
+        if col == 'thumbnail':
+            continue
         try:
             df[col] = df[col].astype(str).str.replace(r'https?://', lambda m: m.group(0).replace('://', '[:]//'), regex=True)
         except Exception:
@@ -85,10 +103,12 @@ st.markdown(CARD_CSS, unsafe_allow_html=True)
 
 # Заголовок
 st.markdown("""
-<div class="app-title">
-  <div>
-    <h1>💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року</h1>
-    <div class="small-muted">Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори</div>
+<div class="block-container">
+  <div class="app-title">
+    <div>
+      <h1>💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року</h1>
+      <div class="small-muted">Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори</div>
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -104,8 +124,8 @@ if df.empty:
 with st.sidebar:
     st.header("🔍 Фільтри")
     st.write("Фільтруйте та шукайте швидко")
-    available_brands = sorted(df['brand'].dropna().unique())
-    brands = st.multiselect("Бренд", options=available_brands, default=available_brands[:5])
+    available_brands = sorted(df['brand'].dropna().unique()) if 'brand' in df.columns else []
+    brands = st.multiselect("Бренд", options=available_brands, default=available_brands[:5] if available_brands else [])
     price_min, price_max = st.slider("Ціна (USD)", int(df['price_usd'].min()), int(df['price_usd'].max()), (int(df['price_usd'].min()), int(df['price_usd'].max())))
     screen_min, screen_max = st.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
     ai_cpu = st.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
@@ -130,6 +150,7 @@ if search_q and isinstance(search_q, str) and search_q.strip():
     filtered = filtered[mask]
 
 # Метрики
+st.markdown('<div class="block-container">')
 st.markdown("### 📊 Загальні метрики")
 col1, col2, col3 = st.columns(3)
 col1.metric("Моделей (відфільтровано)", len(filtered))
@@ -186,11 +207,11 @@ with tab1:
                 for j, (_, row) in enumerate(rows.iloc[i:i+cols_per_row].iterrows()):
                     col = cols[j]
                     thumb = row.get('thumbnail', '')
-                    if thumb:
+                    # Якщо thumbnail не валідний — використовуємо квадратний плейсхолдер
+                    if thumb and isinstance(thumb, str) and thumb.strip():
                         thumb_url = thumb.replace('[:]//', '://')
                     else:
-                        # квадратний плейсхолдер
-                        thumb_url = "https://via.placeholder.com/600x600?text=No+image"
+                        thumb_url = "https://via.placeholder.com/300x300?text=No+image"
 
                     # Побудова HTML-картки з використанням класу .thumb (стилі в CARD_CSS)
                     brand = row.get('brand', '')
@@ -199,15 +220,24 @@ with tab1:
                     screen = row.get('screen_size_in', '—')
                     display_type = row.get('display_type', '—')
                     battery = row.get('battery_wh', '—')
-                    html = f'''
+                    code = row.get('code', '') or row.get('sku', '') or ''
+                    img_html = f'''
+                    <img class="thumb" src="{thumb_url}" alt="{brand} {model}"
+                         onerror="this.onerror=null;this.src='https://via.placeholder.com/300x300?text=No+image';">
+                    '''
+                    card_html = f'''
                     <div class="card">
-                      <img class="thumb" src="{thumb_url}" alt="thumb">
+                      {img_html}
                       <div class="title">{brand} {model}</div>
                       <div class="meta">{screen}" • {display_type} • {battery} Wh</div>
-                      <div class="price">${price}</div>
+                      <div class="small-note">Код: {code}</div>
+                      <div class="card-footer">
+                        <div class="price">${price}</div>
+                        <a class="buy-btn" href="#" onclick="window.alert('Купити: {brand} {model}');return false;">Купити</a>
+                      </div>
                     </div>
                     '''
-                    col.markdown(html, unsafe_allow_html=True)
+                    col.markdown(card_html, unsafe_allow_html=True)
                     # Кнопка детально працює через Streamlit API (під карткою)
                     if col.button("Детальніше", key=f"det_{start_idx+i+j}"):
                         st.info(f'Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}" • Тип: {display_type}; Батарея: {battery}Wh')
@@ -251,6 +281,8 @@ with tab3:
     except Exception:
         logger.exception("Error in trends")
         st.error("Не вдалося побудувати тренди. Подробиці в логах.")
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Експорт CSV
 st.markdown("### 📤 Експорт результатів")

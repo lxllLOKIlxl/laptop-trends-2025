@@ -1,77 +1,16 @@
-import math
-import logging
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from src.data_processing import load_data, filter_data, compute_brand_share, compute_trends
+import logging
 
+st.set_page_config(page_title="Laptop Trends 2025", layout="centered")
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide", initial_sidebar_state="expanded")
-
-# CSS — чіткі рамки, квадратні превʼю, центрування зображень
-CARD_CSS = """
-<style>
-:root{
-  --page-bg: #f5f7fb;
-  --container-bg: #ffffff;
-  --card-border: #89c7ff;   /* чітка блакитна рамка */
-  --card-shadow: 0 8px 28px rgba(18,36,63,0.08);
-  --muted: #6b7280;
-  --price-color: #d8232a;
-}
-body { background: var(--page-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#111827; }
-
-/* Центрую основний блок */
-.block-container { max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; padding-top:18px !important; padding-bottom:40px !important; }
-
-/* Заголовок */
-.app-title { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
-.app-title h1 { margin:0; font-size:28px; font-weight:700; }
-.small-muted { color:var(--muted); font-size:13px; }
-
-/* Картка */
-.card {
-  border-radius:10px;
-  background: var(--container-bg);
-  border: 2px solid var(--card-border);
-  box-shadow: var(--card-shadow);
-  padding:12px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  height:100%;
-}
-
-/* Прев'ю: гарантуємо квадрат + центр-кроп */
-.card .thumb {
-  width:100%;
-  aspect-ratio: 1 / 1;                /* квадрат */
-  height: 260px;                      /* стабільна висота картки (регулюй) */
-  object-fit: cover !important;       /* обрізає без розтягування */
-  object-position: center center !important; /* центр кадру */
-  display:block;
-  margin:0 auto 10px auto;
-  border-radius:6px;
-  background:#f7f9fb;
-}
-
-/* Текст */
-.card .title { font-weight:700; font-size:14px; margin-bottom:6px; color:#111827; }
-.card .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
-.card .price { color: var(--price-color); font-weight:800; font-size:16px; margin-top:auto; }
-.small-note { font-size:11px; color:var(--muted); }
-
-/* Невеликі відступи колонок у Streamlit */
-.stColumns > div { padding-left:6px; padding-right:6px; }
-</style>
-"""
 
 def sanitize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Екранізуємо сирі URL у текстових колонках, пропускаємо thumbnail."""
+    """Позбуваємось сирих 'http' у всіх текстових стовпцях, щоб уникнути автолінкування в браузері."""
     df = df.copy()
     for col in df.select_dtypes(include=['object', 'string']).columns:
-        if col == 'thumbnail':
-            continue
         try:
             df[col] = df[col].astype(str).str.replace(r'https?://', lambda m: m.group(0).replace('://', '[:]//'), regex=True)
         except Exception:
@@ -84,45 +23,34 @@ def safe_plotly_chart(fig):
         st.plotly_chart(fig, use_container_width=True)
     except Exception:
         logger.exception("Plotly render error")
-        st.error("Помилка при рендерінгу графіка. Деталі в логах.")
-
-st.markdown(CARD_CSS, unsafe_allow_html=True)
+        st.error("Виникла помилка під час побудови графіка. Деталі в логах.")
 
 # Заголовок
-st.markdown("""
-<div class="block-container">
-  <div class="app-title">
-    <div>
-      <h1>💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року</h1>
-      <div class="small-muted">Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори</div>
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+st.title("💻 Laptop Trends 2025")
+st.markdown("Інтерактивний аналіз моделей ноутбуків: ціни, автономність, OLED, AI‑процесори")
 
-# Завантаження даних
+# --- Завантаження даних ---
 DATA_PATH = "data/sample_laptops.csv"
 df = load_data(DATA_PATH)
 
 if df.empty:
-    st.error("❌ Дані не завантажені або CSV-файл порожній. Перевірте data/sample_laptops.csv")
+    st.error("❌ Дані не завантажені або CSV-файл порожній.")
     st.stop()
 
+# --- Бокова панель: фільтри ---
 with st.sidebar:
     st.header("🔍 Фільтри")
-    st.write("Фільтруйте та шукайте швидко")
-    available_brands = sorted(df['brand'].dropna().unique()) if 'brand' in df.columns else []
-    brands = st.multiselect("Бренд", options=available_brands, default=available_brands[:5] if available_brands else [])
+    try:
+        brands = st.multiselect("Бренд", options=sorted(df['brand'].unique()), default=sorted(df['brand'].unique())[:5])
+    except Exception:
+        brands = st.multiselect("Бренд", options=[], default=[])
     price_min, price_max = st.slider("Ціна (USD)", int(df['price_usd'].min()), int(df['price_usd'].max()), (int(df['price_usd'].min()), int(df['price_usd'].max())))
     screen_min, screen_max = st.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
     ai_cpu = st.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
-    max_show = st.number_input("Карток на сторінці", min_value=3, max_value=60, value=12)
-    st.markdown("---")
-    st.markdown("Шаблінський Студент 2 курсу")
+    # Кількість карток для відображення
+    max_show = st.number_input("Кількість моделей на сторінці", min_value=3, max_value=60, value=9)
 
-# Пошук
-search_q = st.text_input("🔎 Пошук (бренд або модель)", value="")
-
+# --- Фільтрація ---
 try:
     filtered = filter_data(df, brands=brands, price_range=(price_min, price_max), screen_range=(screen_min, screen_max), ai_cpu=ai_cpu)
 except Exception:
@@ -130,102 +58,41 @@ except Exception:
     st.error("Помилка під час фільтрації даних. Перевірте структуру CSV.")
     st.stop()
 
-if search_q and isinstance(search_q, str) and search_q.strip():
-    q = search_q.strip().lower()
-    mask = filtered.apply(lambda row: q in f\"{row.get('brand','')} {row.get('model','')}\".lower(), axis=1)
-    filtered = filtered[mask]
-
-# Метрики
-st.markdown('<div class="block-container">', unsafe_allow_html=True)
+# --- Метрики ---
 st.markdown("### 📊 Загальні метрики")
 col1, col2, col3 = st.columns(3)
 col1.metric("Моделей (відфільтровано)", len(filtered))
 col2.metric("Середня ціна (USD)", f"{filtered['price_usd'].mean():.0f}" if len(filtered) else "—")
 col3.metric("Середня автономність (Wh)", f"{filtered['battery_wh'].mean():.0f}" if len(filtered) else "—")
 
-# Вкладки
+# --- Вкладки ---
 tab1, tab2, tab3 = st.tabs(["🖼️ Каталог", "🥧 Частка брендів", "📈 Тренди"])
 
 with tab1:
     try:
         display_df = filtered.sort_values(by='price_usd').reset_index(drop=True)
-        for c in ['url', 'image_urls_raw', 'image_list']:
-            if c in display_df.columns:
-                display_df = display_df.drop(columns=[c])
+        if 'url' in display_df.columns:
+            display_df = display_df.drop(columns=['url'])
         display_df = sanitize_text_columns(display_df)
 
-        total_items = len(display_df)
-        page_size = int(max_show)
-        total_pages = max(1, math.ceil(total_items / page_size))
-
-        if 'page' not in st.session_state:
-            st.session_state.page = 1
-
-        pager_cols = st.columns([1,2,1,2])
-        with pager_cols[0]:
-            if st.button("⬅️ Prev"):
-                if st.session_state.page > 1:
-                    st.session_state.page -= 1
-        with pager_cols[1]:
-            st.markdown(f"**Сторінка {st.session_state.page} / {total_pages}**")
-        with pager_cols[2]:
-            if st.button("Next ➡️"):
-                if st.session_state.page < total_pages:
-                    st.session_state.page += 1
-        with pager_cols[3]:
-            jump = st.number_input("Перейти на стор.", min_value=1, max_value=total_pages, value=st.session_state.page, step=1, key="jump_page")
-            if jump != st.session_state.page:
-                st.session_state.page = int(jump)
-
-        start_idx = (st.session_state.page - 1) * page_size
-        end_idx = start_idx + page_size
-        rows = display_df.iloc[start_idx:end_idx]
-
-        if rows.empty:
-            st.markdown('<div class="empty-state">Немає моделей для відображення.</div>', unsafe_allow_html=True)
-        else:
-            cols_per_row = 4
-            for i in range(0, len(rows), cols_per_row):
-                cols = st.columns(cols_per_row, gap="large")
-                for j, (_, row) in enumerate(rows.iloc[i:i+cols_per_row].iterrows()):
-                    col = cols[j]
-                    thumb = row.get('thumbnail', '')
-                    if thumb and isinstance(thumb, str) and thumb.strip():
-                        thumb_url = thumb.replace('[:]//', '://')
-                    else:
-                        thumb_url = "https://via.placeholder.com/600x600?text=No+image"
-
-                    # Вставляємо <img> з inline-стилем на випадок, якщо CSS переобтяжується
-                    img_html = f'''
-                    <img class="thumb" src="{thumb_url}" alt="{row.get('brand','')} {row.get('model','')}"
-                         style="display:block; width:100%; aspect-ratio:1/1; height:260px; object-fit:cover; object-position:center center;"
-                         onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';">
-                    '''
-
-                    brand = row.get('brand', '')
-                    model = row.get('model', '')
-                    price = row.get('price_usd', '—')
-                    screen = row.get('screen_size_in', '—')
-                    display_type = row.get('display_type', '—')
-                    battery = row.get('battery_wh', '—')
-                    code = row.get('code', '') or row.get('sku', '') or ''
-
-                    card_html = f'''
-                    <div class="card">
-                      {img_html}
-                      <div class="title">{brand} {model}</div>
-                      <div class="meta">{screen}" • {display_type} • {battery} Wh</div>
-                      <div class="small-note">Код: {code}</div>
-                      <div class="card-footer">
-                        <div class="price">${price}</div>
-                        <div></div>
-                      </div>
-                    </div>
-                    '''
-                    col.markdown(card_html, unsafe_allow_html=True)
-
-                    if col.button("Детальніше", key=f"det_{start_idx+i+j}"):
-                        st.info(f'Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}" • Тип: {display_type}; Батарея: {battery}Wh')
+        # Показати як сітку карток
+        rows = display_df.head(int(max_show))
+        cols_per_row = 3
+        for i in range(0, len(rows), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, (_, row) in enumerate(rows.iloc[i:i+cols_per_row].iterrows()):
+                col = cols[j]
+                thumb = row.get('thumbnail', '')
+                if thumb:
+                    # якщо thumbnail містить '[:]', відновимо '://'
+                    col.image(thumb.replace('[:]//', '://'), use_container_width=True)
+                else:
+                    col.image("https://via.placeholder.com/300x200?text=No+image", use_container_width=True)
+                col.markdown(f"**{row.get('brand','')} {row.get('model','')}**")
+                col.write(f"Ціна: ${row.get('price_usd','—')}")
+                col.write(f"Екран: {row.get('screen_size_in','—')}\"  •  {row.get('display_type','—')}")
+                if col.button("Детальніше", key=f"det_{i}_{j}"):
+                    st.info(f"Деталі: {row.get('brand','')} {row.get('model','')}")
     except Exception:
         logger.exception("Error rendering catalog")
         st.error("Не вдалося відобразити каталог. Подробиці в логах.")
@@ -267,9 +134,7 @@ with tab3:
         logger.exception("Error in trends")
         st.error("Не вдалося побудувати тренди. Подробиці в логах.")
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Експорт CSV
+# --- Експорт CSV ---
 st.markdown("### 📤 Експорт результатів")
 try:
     st.download_button(

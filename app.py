@@ -41,7 +41,7 @@ body {
 }
 .card .thumb {
   width:100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1 / 1;
   height:auto;
   object-fit:cover;
   border-radius:8px;
@@ -82,7 +82,7 @@ st.markdown(CARD_CSS, unsafe_allow_html=True)
 st.markdown("""
 <div class="app-title">
   <div>
-    <h1>💻 Тенденції ноутбуків 2025</h1>
+    <h1>💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року</h1>
     <div class="small-muted">Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори</div>
   </div>
 </div>

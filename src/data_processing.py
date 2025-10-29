@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
 import logging
+import re
 from typing import List
 
 logger = logging.getLogger(__name__)
+
+# Якщо у репо є папка images/ з картинками — RAW_BASE формує прямі raw URL для імен файлів
+RAW_BASE = "https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/"
 
 def _split_image_list(val: str) -> List[str]:
     """Розбиває рядок image_urls (розділювач ;) на список, очищає пробіли."""
@@ -11,6 +15,32 @@ def _split_image_list(val: str) -> List[str]:
         return []
     parts = [p.strip() for p in val.split(';') if p.strip()]
     return parts
+
+def _to_raw_github_url(url: str) -> str:
+    """Якщо це github.com/.../blob/... → перетворити на raw.githubusercontent.com/...,
+       якщо це ім'я файлу — приписати RAW_BASE, якщо це вже валідний http(s) — повернути як є.
+       Повертає '' якщо не валідне.
+    """
+    if not isinstance(url, str) or url.strip() == "":
+        return ""
+    url = url.strip()
+    # Якщо вже raw
+    if url.startswith("https://raw.githubusercontent.com/"):
+        return url
+    # blob → raw (припускаємо гілку main)
+    m = re.match(r'^https?://github\.com/([^/]+/[^/]+)/(?:blob|raw)/(.+)$', url)
+    if m:
+        repo_part = m.group(1)
+        path = m.group(2)
+        return f"https://raw.githubusercontent.com/{repo_part}/main/{path}"
+    # якщо повний http(s) інший — повертаємо як є
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    # якщо це просто ім'я файлу (наприклад envy15.png) — припишемо до RAW_BASE
+    if re.match(r'^[\w\-\./]+\.(png|jpg|jpeg|gif)$', url, flags=re.IGNORECASE):
+        filename = url
+        return RAW_BASE + filename
+    return ""
 
 def load_data(path: str) -> pd.DataFrame:
     """Завантаження CSV без звернення до Streamlit у модулі — повертаємо порожній DataFrame при помилці."""
@@ -45,6 +75,14 @@ def load_data(path: str) -> pd.DataFrame:
     df['image_list'] = df['image_urls_raw'].apply(_split_image_list)
     # Перша картинка як thumbnail або порожній рядок
     df['thumbnail'] = df['image_list'].apply(lambda lst: lst[0] if lst else '')
+
+    # Нормалізація thumbnail → повний raw URL або ''
+    df['thumbnail'] = df['thumbnail'].apply(lambda v: _to_raw_github_url(v))
+
+    # Якщо thumbnail порожній, але є окремі стовпці з ім'ям файлу, підхопимо їх
+    for alt_col in ['image_path', 'image']:
+        if alt_col in df.columns:
+            df['thumbnail'] = df.apply(lambda row: _to_raw_github_url(row.get('thumbnail')) or _to_raw_github_url(str(row.get(alt_col,''))), axis=1)
 
     # Булеві ознаки
     df['cpu'] = df.get('cpu', pd.Series(dtype='object')).astype(str)

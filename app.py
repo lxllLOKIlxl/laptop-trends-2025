@@ -85,14 +85,14 @@ with tab1:
                 thumb = row.get('thumbnail', '')
                 if thumb:
                     # якщо thumbnail містить '[:]', відновимо '://'
-                    col.image(thumb.replace('[:]//', '://'), use_column_width=True)
+                    col.image(thumb.replace('[:]//', '://'), use_container_width=True)
                 else:
-                    col.image("https://via.placeholder.com/300x200?text=No+image", use_column_width=True)
+                    col.image("https://via.placeholder.com/300x200?text=No+image", use_container_width=True)
                 col.markdown(f"**{row.get('brand','')} {row.get('model','')}**")
                 col.write(f"Ціна: ${row.get('price_usd','—')}")
                 col.write(f"Екран: {row.get('screen_size_in','—')}\"  •  {row.get('display_type','—')}")
                 if col.button("Детальніше", key=f"det_{i}_{j}"):
-                    st.modal = True
+                    st.info(f"Деталі: {row.get('brand','')} {row.get('model','')}")
     except Exception:
         logger.exception("Error rendering catalog")
         st.error("Не вдалося відобразити каталог. Подробиці в логах.")

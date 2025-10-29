@@ -1,46 +1,26 @@
 import pandas as pd
 import numpy as np
 import logging
-import re
 from typing import List
 
 logger = logging.getLogger(__name__)
 
-# Якщо у репо є папка images/ з картинками — RAW_BASE формує прямі raw URL для імен файлів
-RAW_BASE = "https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/"
-
 def _split_image_list(val: str) -> List[str]:
+    """Розбиває рядок image_urls (розділювач ;) на список, очищає пробіли."""
     if not isinstance(val, str) or val.strip() == "":
         return []
     parts = [p.strip() for p in val.split(';') if p.strip()]
     return parts
 
-def _to_raw_github_url(url: str) -> str:
-    """Конвертує blob → raw, імена файлів → RAW_BASE, повертає '' якщо не валідно."""
-    if not isinstance(url, str) or url.strip() == "":
-        return ""
-    url = url.strip()
-    if url.startswith("https://raw.githubusercontent.com/"):
-        return url
-    m = re.match(r'^https?://github\.com/([^/]+/[^/]+)/(?:blob|raw)/(.+)$', url)
-    if m:
-        repo_part = m.group(1)
-        path = m.group(2)
-        return f"https://raw.githubusercontent.com/{repo_part}/main/{path}"
-    if url.startswith("http://") or url.startswith("https://"):
-        return url
-    if re.match(r'^[\w\-\./]+\.(png|jpg|jpeg|gif|webp)$', url, flags=re.IGNORECASE):
-        filename = url
-        return RAW_BASE + filename
-    return ""
-
 def load_data(path: str) -> pd.DataFrame:
+    """Завантаження CSV без звернення до Streamlit у модулі — повертаємо порожній DataFrame при помилці."""
     try:
         df = pd.read_csv(path)
     except Exception:
         logger.exception("Error reading CSV")
         return pd.DataFrame()
 
+    # Нормалізація та приведення типів
     try:
         df['brand'] = df.get('brand', pd.Series(dtype='object')).astype(str).str.strip().str.title()
     except Exception:
@@ -60,18 +40,14 @@ def load_data(path: str) -> pd.DataFrame:
 
     df['release_year'] = pd.to_numeric(df.get('release_year', pd.Series(np.nan)), errors='coerce').fillna(2025).astype(int)
 
-    # image handling
+    # Створюємо колонки image_list і thumbnail
+    # підтримуємо image_url або image_urls (розділені ;)
     df['image_urls_raw'] = df.get('image_url', df.get('image_urls', '')).fillna('').astype(str)
     df['image_list'] = df['image_urls_raw'].apply(_split_image_list)
+    # перша картинка як thumbnail або порожній рядок
     df['thumbnail'] = df['image_list'].apply(lambda lst: lst[0] if lst else '')
 
-    df['thumbnail'] = df['thumbnail'].apply(lambda v: _to_raw_github_url(v))
-
-    for alt_col in ['image_path', 'image']:
-        if alt_col in df.columns:
-            df['thumbnail'] = df.apply(lambda row: _to_raw_github_url(row.get('thumbnail')) or _to_raw_github_url(str(row.get(alt_col,''))), axis=1)
-
-    # flags
+    # Булеві ознаки
     df['cpu'] = df.get('cpu', pd.Series(dtype='object')).astype(str)
     df['display_type'] = df.get('display_type', pd.Series(dtype='object')).astype(str)
     df['is_ai_cpu'] = df['cpu'].str.contains('Ultra|AI|Ryzen AI', case=False, na=False)

@@ -127,8 +127,8 @@ if search_q and isinstance(search_q, str) and search_q.strip():
 st.markdown("### 📊 Загальні метрики")
 col1, col2, col3 = st.columns(3)
 col1.metric("Моделей (відфільтровано)", len(filtered))
-col2.metric("Середня ціна (USD)", f\"{filtered['price_usd'].mean():.0f}\" if len(filtered) else "—")
-col3.metric("Середня автономність (Wh)", f\"{filtered['battery_wh'].mean():.0f}\" if len(filtered) else "—")
+col2.metric("Середня ціна (USD)", f"{filtered['price_usd'].mean():.0f}" if len(filtered) else "—")
+col3.metric("Середня автономність (Wh)", f"{filtered['battery_wh'].mean():.0f}" if len(filtered) else "—")
 
 # Вкладки
 tab1, tab2, tab3 = st.tabs(["🖼️ Каталог", "🥧 Частка брендів", "📈 Тренди"])
@@ -202,7 +202,7 @@ with tab1:
                     col.markdown(html, unsafe_allow_html=True)
                     # Кнопка детально працює через Streamlit API (під карткою)
                     if col.button("Детальніше", key=f"det_{start_idx+i+j}"):
-                        st.info(f"Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}\"; Тип: {display_type}; Батарея: {battery}Wh")
+                        st.info(f'Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}" • Тип: {display_type}; Батарея: {battery}Wh')
     except Exception:
         logger.exception("Error rendering catalog")
         st.error("Не вдалося відобразити каталог. Подробиці в логах.")

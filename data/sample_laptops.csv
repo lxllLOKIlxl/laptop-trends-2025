@@ -1,6 +1,6 @@
 brand,model,price_usd,screen_size_in,cpu,display_type,refresh_rate,ram_gb,storage_gb,battery_wh,release_year,url,image_url
 Dell,XPS 16,1799,16,Intel Core Ultra 7,OLED,120,16,512,70,2025,https://example.com/xps16,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/refs/heads/main/images/xps16.png
-Asus,Zenbook 14,1299,14,Intel Core i7,IPS,60,16,512,63,2025,https://example.com/zenbook14,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/zenbook14.jpg
+Asus,Zenbook 14,1299,14,Intel Core i7,IPS,60,16,512,63,2025,https://example.com/zenbook14,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/refs/heads/main/images/Zenbook.png
 Lenovo,ThinkPad X1,1899,14.5,Ryzen AI 7,OLED,120,32,1024,80,2025,https://example.com/x1,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/thinkpadx1.jpg
 HP,Envy 15,1099,15.6,Intel Core Ultra 5,OLED,144,16,512,60,2025,https://example.com/envy15,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/envy15.png
 Acer,Swift 16,899,16,Ryzen 7,IPS,60,8,256,50,2024,https://example.com/swift16,https://raw.githubusercontent.com/lxllLOKIlxl/laptop-trends-2025/main/images/swift16.png

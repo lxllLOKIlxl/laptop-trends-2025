@@ -41,12 +41,11 @@ body {
 }
 .card .thumb {
   width:100%;
-  aspect-ratio: 50 / 33;
-  height:auto;
+  height:90px;
   object-fit:cover;
-  border-radius:8px;
+  border-radius:6px;
   display:block;
-  margin-bottom:8px;
+  margin-bottom:6px;
 }
 .card .meta { font-size:14px; color:var(--muted); margin-bottom:6px; }
 .card .title { font-weight:700; font-size:16px; margin-bottom:6px; }

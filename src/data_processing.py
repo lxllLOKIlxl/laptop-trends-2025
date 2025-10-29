@@ -1,20 +1,58 @@
 import pandas as pd
 import numpy as np
+import logging
+from typing import List
+
+logger = logging.getLogger(__name__)
+
+def _split_image_list(val: str) -> List[str]:
+    """Розбиває рядок image_urls (розділювач ;) на список, очищає пробіли."""
+    if not isinstance(val, str) or val.strip() == "":
+        return []
+    parts = [p.strip() for p in val.split(';') if p.strip()]
+    return parts
 
 def load_data(path: str) -> pd.DataFrame:
+    """Завантаження CSV без звернення до Streamlit у модулі — повертаємо порожній DataFrame при помилці."""
     try:
         df = pd.read_csv(path)
-    except Exception as e:
-        st.error(f"❌ Помилка при завантаженні CSV: {e}")
+    except Exception:
+        logger.exception("Error reading CSV")
         return pd.DataFrame()
 
-    df['brand'] = df['brand'].str.strip().str.title()
-    df['price_usd'] = pd.to_numeric(df['price_usd'], errors='coerce').fillna(df['price_usd'].median())
-    df['screen_size_in'] = pd.to_numeric(df['screen_size_in'], errors='coerce').fillna(13.3)
-    df['battery_wh'] = pd.to_numeric(df.get('battery_wh', pd.Series(np.nan)), errors='coerce').fillna(50)
+    # Нормалізація та приведення типів
+    try:
+        df['brand'] = df.get('brand', pd.Series(dtype='object')).astype(str).str.strip().str.title()
+    except Exception:
+        df['brand'] = df.get('brand', pd.Series(dtype='object')).astype(str)
+
+    df['price_usd'] = pd.to_numeric(df.get('price_usd', pd.Series(np.nan)), errors='coerce')
+    if df['price_usd'].isna().all():
+        return pd.DataFrame()
+    df['price_usd'] = df['price_usd'].fillna(df['price_usd'].median())
+
+    df['screen_size_in'] = pd.to_numeric(df.get('screen_size_in', pd.Series(np.nan)), errors='coerce').fillna(13.3)
+
+    if 'battery_wh' in df.columns:
+        df['battery_wh'] = pd.to_numeric(df['battery_wh'], errors='coerce').fillna(df['battery_wh'].median())
+    else:
+        df['battery_wh'] = 50.0
+
     df['release_year'] = pd.to_numeric(df.get('release_year', pd.Series(np.nan)), errors='coerce').fillna(2025).astype(int)
+
+    # Створюємо колонки image_list і thumbnail
+    # підтримуємо image_url або image_urls (розділені ;)
+    df['image_urls_raw'] = df.get('image_url', df.get('image_urls', '')).fillna('').astype(str)
+    df['image_list'] = df['image_urls_raw'].apply(_split_image_list)
+    # перша картинка як thumbnail або порожній рядок
+    df['thumbnail'] = df['image_list'].apply(lambda lst: lst[0] if lst else '')
+
+    # Булеві ознаки
+    df['cpu'] = df.get('cpu', pd.Series(dtype='object')).astype(str)
+    df['display_type'] = df.get('display_type', pd.Series(dtype='object')).astype(str)
     df['is_ai_cpu'] = df['cpu'].str.contains('Ultra|AI|Ryzen AI', case=False, na=False)
     df['is_oled'] = df['display_type'].str.contains('OLED', case=False, na=False)
+
     return df
 
 def filter_data(df: pd.DataFrame, brands=None, price_range=None, screen_range=None, ai_cpu="Усі") -> pd.DataFrame:
@@ -32,11 +70,15 @@ def filter_data(df: pd.DataFrame, brands=None, price_range=None, screen_range=No
     return q
 
 def compute_brand_share(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame(columns=['brand','count'])
     s = df['brand'].value_counts().reset_index()
     s.columns = ['brand', 'count']
     return s
 
 def compute_trends(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame(columns=['year','metric','value'])
     price_trend = df.groupby('release_year')['price_usd'].mean().reset_index()
     price_trend['metric'] = 'Середня ціна'
     price_trend.rename(columns={'release_year': 'year', 'price_usd': 'value'}, inplace=True)

@@ -8,43 +8,32 @@ from src.data_processing import load_data, filter_data, compute_brand_share, com
 logger = logging.getLogger(__name__)
 st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide", initial_sidebar_state="expanded")
 
-# СSS для стильних карток і загального вигляду
+# CSS — чіткі рамки, квадратні превʼю, центрування зображень
 CARD_CSS = """
 <style>
 :root{
   --page-bg: #f5f7fb;
   --container-bg: #ffffff;
-  --card-border: #9fd7ff;   /* підсилена блакитна рамка */
-  --card-shadow: 0 8px 30px rgba(18,36,63,0.08);
-  --accent: #0b6bff;
-  --price-color: #d8232a;
+  --card-border: #89c7ff;   /* чітка блакитна рамка */
+  --card-shadow: 0 8px 28px rgba(18,36,63,0.08);
   --muted: #6b7280;
+  --price-color: #d8232a;
 }
-body {
-  background: var(--page-bg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #111827;
-}
+body { background: var(--page-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#111827; }
 
-/* Центруємо основний блок і даємо відступи */
-.block-container {
-  max-width: 1200px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-top: 18px !important;
-  padding-bottom: 40px !important;
-}
+/* Центрую основний блок */
+.block-container { max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; padding-top:18px !important; padding-bottom:40px !important; }
 
 /* Заголовок */
 .app-title { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
 .app-title h1 { margin:0; font-size:28px; font-weight:700; }
 .small-muted { color:var(--muted); font-size:13px; }
 
-/* Карта (card) */
+/* Картка */
 .card {
   border-radius:10px;
   background: var(--container-bg);
-  border: 2px solid var(--card-border); /* товща, чіткіша рамка */
+  border: 2px solid var(--card-border);
   box-shadow: var(--card-shadow);
   padding:12px;
   overflow:hidden;
@@ -53,43 +42,32 @@ body {
   height:100%;
 }
 
-/* Квадратне превʼю: гарантія квадрату та обрізка без розтягування */
+/* Прев'ю: гарантуємо квадрат + центр-кроп */
 .card .thumb {
   width:100%;
-  aspect-ratio: 1 / 1;    /* квадрат */
-  object-fit: cover;      /* обрізає, не розтягує */
-  border-radius:6px;
+  aspect-ratio: 1 / 1;                /* квадрат */
+  height: 260px;                      /* стабільна висота картки (регулюй) */
+  object-fit: cover !important;       /* обрізає без розтягування */
+  object-position: center center !important; /* центр кадру */
   display:block;
-  margin-bottom:10px;
+  margin:0 auto 10px auto;
+  border-radius:6px;
   background:#f7f9fb;
 }
 
-/* Текстові стилі картки */
+/* Текст */
 .card .title { font-weight:700; font-size:14px; margin-bottom:6px; color:#111827; }
 .card .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
 .card .price { color: var(--price-color); font-weight:800; font-size:16px; margin-top:auto; }
-.card .card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; }
 .small-note { font-size:11px; color:var(--muted); }
 
-/* Кнопки/контейнери внизу сторінки */
-.controls-row { display:flex; gap:8px; align-items:center; }
-
 /* Невеликі відступи колонок у Streamlit */
-.stColumns > div {
-  padding-left:6px;
-  padding-right:6px;
-}
-
-/* Знижуємо яскравість placeholder'ів щоб не кидались в очі */
-img.thumb[alt="No image"] { filter: none; }
-
+.stColumns > div { padding-left:6px; padding-right:6px; }
 </style>
 """
 
 def sanitize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Позбуваємось сирих 'http' у текстових стовпцях щоб уникнути автолінкування в браузері.
-       Пропускаємо колонку 'thumbnail' — її ми нормалізували у load_data.
-    """
+    """Екранізуємо сирі URL у текстових колонках, пропускаємо thumbnail."""
     df = df.copy()
     for col in df.select_dtypes(include=['object', 'string']).columns:
         if col == 'thumbnail':
@@ -106,11 +84,11 @@ def safe_plotly_chart(fig):
         st.plotly_chart(fig, use_container_width=True)
     except Exception:
         logger.exception("Plotly render error")
-        st.error("Виникла помилка під час побудови графіка. Деталі в логах.")
+        st.error("Помилка при рендерінгу графіка. Деталі в логах.")
 
 st.markdown(CARD_CSS, unsafe_allow_html=True)
 
-# Заголовок (в рамках .block-container)
+# Заголовок
 st.markdown("""
 <div class="block-container">
   <div class="app-title">
@@ -140,10 +118,9 @@ with st.sidebar:
     ai_cpu = st.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
     max_show = st.number_input("Карток на сторінці", min_value=3, max_value=60, value=12)
     st.markdown("---")
-    # Замінив рядок про версію інтерфейсу на потрібний підпис
     st.markdown("Шаблінський Студент 2 курсу")
 
-# Пошук загальний (brand + model)
+# Пошук
 search_q = st.text_input("🔎 Пошук (бренд або модель)", value="")
 
 try:
@@ -153,13 +130,12 @@ except Exception:
     st.error("Помилка під час фільтрації даних. Перевірте структуру CSV.")
     st.stop()
 
-# Швидкий пошук по brand/model
 if search_q and isinstance(search_q, str) and search_q.strip():
     q = search_q.strip().lower()
-    mask = filtered.apply(lambda row: q in f"{row.get('brand','')} {row.get('model','')}".lower(), axis=1)
+    mask = filtered.apply(lambda row: q in f\"{row.get('brand','')} {row.get('model','')}\".lower(), axis=1)
     filtered = filtered[mask]
 
-# Метрики (обгорнуті в контейнер — без додаткового 'raw' <div>)
+# Метрики
 st.markdown('<div class="block-container">', unsafe_allow_html=True)
 st.markdown("### 📊 Загальні метрики")
 col1, col2, col3 = st.columns(3)
@@ -173,7 +149,6 @@ tab1, tab2, tab3 = st.tabs(["🖼️ Каталог", "🥧 Частка бре�
 with tab1:
     try:
         display_df = filtered.sort_values(by='price_usd').reset_index(drop=True)
-        # Приберемо службові колонки з відображення
         for c in ['url', 'image_urls_raw', 'image_list']:
             if c in display_df.columns:
                 display_df = display_df.drop(columns=[c])
@@ -183,10 +158,9 @@ with tab1:
         page_size = int(max_show)
         total_pages = max(1, math.ceil(total_items / page_size))
 
-        # Ініціалізація стану сторінки
         if 'page' not in st.session_state:
             st.session_state.page = 1
-        # Контрол панель пагінації
+
         pager_cols = st.columns([1,2,1,2])
         with pager_cols[0]:
             if st.button("⬅️ Prev"):
@@ -210,20 +184,24 @@ with tab1:
         if rows.empty:
             st.markdown('<div class="empty-state">Немає моделей для відображення.</div>', unsafe_allow_html=True)
         else:
-            cols_per_row = 4  # більше колонок — менші квадрати
-            # Рендер карток
+            cols_per_row = 4
             for i in range(0, len(rows), cols_per_row):
                 cols = st.columns(cols_per_row, gap="large")
                 for j, (_, row) in enumerate(rows.iloc[i:i+cols_per_row].iterrows()):
                     col = cols[j]
                     thumb = row.get('thumbnail', '')
-                    # Якщо thumbnail не валідний — використовуємо квадратний плейсхолдер
                     if thumb and isinstance(thumb, str) and thumb.strip():
                         thumb_url = thumb.replace('[:]//', '://')
                     else:
-                        thumb_url = "https://via.placeholder.com/300x300?text=No+image"
+                        thumb_url = "https://via.placeholder.com/600x600?text=No+image"
 
-                    # Побудова HTML-картки з використанням класу .thumb (стилі в CARD_CSS)
+                    # Вставляємо <img> з inline-стилем на випадок, якщо CSS переобтяжується
+                    img_html = f'''
+                    <img class="thumb" src="{thumb_url}" alt="{row.get('brand','')} {row.get('model','')}"
+                         style="display:block; width:100%; aspect-ratio:1/1; height:260px; object-fit:cover; object-position:center center;"
+                         onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';">
+                    '''
+
                     brand = row.get('brand', '')
                     model = row.get('model', '')
                     price = row.get('price_usd', '—')
@@ -231,11 +209,7 @@ with tab1:
                     display_type = row.get('display_type', '—')
                     battery = row.get('battery_wh', '—')
                     code = row.get('code', '') or row.get('sku', '') or ''
-                    img_html = f'''
-                    <img class="thumb" src="{thumb_url}" alt="{brand} {model}"
-                         onerror="this.onerror=null;this.src='https://via.placeholder.com/300x300?text=No+image';">
-                    '''
-                    # УНИКНУЛИ кнопку "Купити" — виводимо лише інформацію і мету
+
                     card_html = f'''
                     <div class="card">
                       {img_html}
@@ -249,7 +223,7 @@ with tab1:
                     </div>
                     '''
                     col.markdown(card_html, unsafe_allow_html=True)
-                    # Кнопка "Детальніше" під карткою залишилась як Streamlit контрол
+
                     if col.button("Детальніше", key=f"det_{start_idx+i+j}"):
                         st.info(f'Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}" • Тип: {display_type}; Батарея: {battery}Wh')
     except Exception:

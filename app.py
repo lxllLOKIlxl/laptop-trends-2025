@@ -6,7 +6,7 @@ import plotly.express as px
 from src.data_processing import load_data, filter_data, compute_brand_share, compute_trends
 
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Тенденції ноутбуків 2025", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide", initial_sidebar_state="expanded")
 
 # СSS для стильних карток і загального вигляду
 CARD_CSS = """
@@ -41,7 +41,8 @@ body {
 }
 .card .thumb {
   width:100%;
-  height:180px;
+  aspect-ratio: 16 / 9;
+  height:auto;
   object-fit:cover;
   border-radius:8px;
   display:block;

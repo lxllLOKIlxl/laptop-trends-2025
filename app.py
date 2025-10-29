@@ -120,7 +120,7 @@ except Exception:
 # Швидкий пошук по brand/model
 if search_q and isinstance(search_q, str) and search_q.strip():
     q = search_q.strip().lower()
-    mask = filtered.apply(lambda row: q in f\"{row.get('brand','') } {row.get('model','') }\".lower(), axis=1)
+    mask = filtered.apply(lambda row: q in f"{row.get('brand','')} {row.get('model','')}".lower(), axis=1)
     filtered = filtered[mask]
 
 # Метрики

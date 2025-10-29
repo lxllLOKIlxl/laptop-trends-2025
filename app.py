@@ -31,6 +31,8 @@ body {
   font-size:34px;
   letter-spacing: -0.5px;
 }
+
+/* Карта: зменшені відступи, компактніша типографіка */
 .card {
   border-radius:12px;
   background:var(--card-bg);
@@ -39,18 +41,22 @@ body {
   padding:8px;
   overflow:hidden;
 }
+
+/* Квадратні превʼю: aspect-ratio гарантує квадрат, object-fit: cover запобігає розтягуванню */
 .card .thumb {
   width:100%;
-  height:140px;
-  object-fit:cover;
+  aspect-ratio: 1 / 1;    /* square */
+  object-fit: cover;      /* ключ: обрізає, а не розтягує */
   border-radius:8px;
   display:block;
   margin-bottom:8px;
+  max-height:320px;       /* обмеження, можна зменшити при потребі */
 }
-.card .meta { font-size:14px; color:var(--muted); margin-bottom:6px; }
-.card .title { font-weight:700; font-size:16px; margin-bottom:6px; }
-.card .price { color: #0b6bff; font-weight:700; font-size:16px; }
-.grid-row { gap: 18px; }
+
+.card .meta { font-size:13px; color:var(--muted); margin-bottom:6px; }
+.card .title { font-weight:700; font-size:15px; margin-bottom:6px; }
+.card .price { color: #0b6bff; font-weight:700; font-size:15px; }
+.grid-row { gap: 14px; }
 .pager { display:flex; gap:8px; align-items:center; }
 .small-muted { color:#6b7280; font-size:13px; }
 .filters-block { padding:8px 4px; }
@@ -103,9 +109,9 @@ with st.sidebar:
     price_min, price_max = st.slider("Ціна (USD)", int(df['price_usd'].min()), int(df['price_usd'].max()), (int(df['price_usd'].min()), int(df['price_usd'].max())))
     screen_min, screen_max = st.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
     ai_cpu = st.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
-    max_show = st.number_input("Карток на сторінці", min_value=3, max_value=60, value=9)
+    max_show = st.number_input("Карток на сторінці", min_value=3, max_value=60, value=12)
     st.markdown("---")
-    st.markdown("Версія інтерфейсу: сучасна карткова сітка • Пагінація додана")
+    st.markdown("Версія інтерфейсу: сучасна карткова сітка • Квадратні превʼю • Пагінація додана")
 
 # Пошук загальний (brand + model)
 search_q = st.text_input("🔎 Пошук (бренд або модель)", value="")
@@ -173,7 +179,7 @@ with tab1:
         if rows.empty:
             st.markdown('<div class="empty-state">Немає моделей для відображення.</div>', unsafe_allow_html=True)
         else:
-            cols_per_row = 3
+            cols_per_row = 4  # більше колонок — менші квадрати
             # Рендер карток
             for i in range(0, len(rows), cols_per_row):
                 cols = st.columns(cols_per_row, gap="large")
@@ -183,8 +189,10 @@ with tab1:
                     if thumb:
                         thumb_url = thumb.replace('[:]//', '://')
                     else:
-                        thumb_url = "https://via.placeholder.com/600x360?text=No+image"
-                    # Побудова HTML-картки
+                        # квадратний плейсхолдер
+                        thumb_url = "https://via.placeholder.com/600x600?text=No+image"
+
+                    # Побудова HTML-картки з використанням класу .thumb (стилі в CARD_CSS)
                     brand = row.get('brand', '')
                     model = row.get('model', '')
                     price = row.get('price_usd', '—')

@@ -8,18 +8,77 @@ from src.data_processing import load_data, filter_data, compute_brand_share, com
 logger = logging.getLogger(__name__)
 st.set_page_config(page_title="Laptop Trends 2025", layout="wide")
 
-# Inject CSS
-st.markdown(open("styles/neon.css").read(), unsafe_allow_html=True)
+# Inject CSS прямо в код
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+:root {
+  --neon: #00e6ff;
+  --neon-2: #7c5cff;
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --muted: #6b7280;
+  --card-shadow: 0 6px 30px rgba(15,23,42,0.06);
+}
+html, body, [data-testid="stAppViewContainer"] > .main {
+  background: var(--bg);
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+.card {
+  border-radius:12px;
+  background: var(--panel);
+  border: 1.5px solid rgba(0,230,255,0.12);
+  box-shadow: var(--card-shadow);
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(124,92,255,0.12);
+}
+.thumb {
+  width:100%;
+  height:200px;
+  object-fit:cover;
+  border-radius:8px;
+  margin-bottom:12px;
+}
+.title {
+  font-weight:700;
+  font-size:15px;
+  margin-bottom:6px;
+}
+.meta {
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+.price {
+  color: #ff3b30;
+  font-weight:800;
+  font-size:16px;
+  margin-top:auto;
+}
+.action {
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:13px;
+  color: #fff;
+  background: linear-gradient(90deg, var(--neon), var(--neon-2));
+  text-decoration:none;
+  box-shadow: 0 8px 20px rgba(124,92,255,0.12);
+}
+</style>
+""", unsafe_allow_html=True)
 
 # Header
-st.markdown("""
-<div class="block-container">
-  <div class="app-title">
-    <h1 class="shimmer">💻 Laptop Trends 2025</h1>
-  </div>
-  <div class="small-muted">Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори</div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("## 💻 Laptop Trends 2025")
+st.markdown("Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори")
 
 # Load data
 DATA_PATH = "data/sample_laptops.csv"
@@ -41,7 +100,6 @@ with st.sidebar:
 filtered = filter_data(df, brands, (price_min, price_max), (screen_min, screen_max), ai_cpu)
 
 # Metrics
-st.markdown('<div class="block-container">', unsafe_allow_html=True)
 st.markdown("### 📊 Загальні метрики")
 c1, c2, c3 = st.columns(3)
 c1.metric("Моделей (відфільтровано)", len(filtered))

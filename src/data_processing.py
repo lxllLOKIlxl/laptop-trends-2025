@@ -2,11 +2,16 @@ import pandas as pd
 import numpy as np
 
 def load_data(path: str) -> pd.DataFrame:
-    df = pd.read_csv(path)
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        st.error(f"❌ Помилка при завантаженні CSV: {e}")
+        return pd.DataFrame()
+
     df['brand'] = df['brand'].str.strip().str.title()
     df['price_usd'] = pd.to_numeric(df['price_usd'], errors='coerce').fillna(df['price_usd'].median())
     df['screen_size_in'] = pd.to_numeric(df['screen_size_in'], errors='coerce').fillna(13.3)
-    df['battery_wh'] = pd.to_numeric(df.get('battery_wh', pd.Series(np.nan)), errors='coerce').fillna(df['battery_wh'].median() if 'battery_wh' in df else 50)
+    df['battery_wh'] = pd.to_numeric(df.get('battery_wh', pd.Series(np.nan)), errors='coerce').fillna(50)
     df['release_year'] = pd.to_numeric(df.get('release_year', pd.Series(np.nan)), errors='coerce').fillna(2025).astype(int)
     df['is_ai_cpu'] = df['cpu'].str.contains('Ultra|AI|Ryzen AI', case=False, na=False)
     df['is_oled'] = df['display_type'].str.contains('OLED', case=False, na=False)

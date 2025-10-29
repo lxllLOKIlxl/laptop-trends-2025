@@ -14,8 +14,8 @@ CARD_CSS = """
 :root{
   --page-bg: #f5f7fb;
   --container-bg: #ffffff;
-  --card-border: #d7eefc;
-  --card-shadow: 0 6px 20px rgba(18,36,63,0.06);
+  --card-border: #9fd7ff;   /* підсилена блакитна рамка */
+  --card-shadow: 0 8px 30px rgba(18,36,63,0.08);
   --accent: #0b6bff;
   --price-color: #d8232a;
   --muted: #6b7280;
@@ -23,6 +23,7 @@ CARD_CSS = """
 body {
   background: var(--page-bg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #111827;
 }
 
 /* Центруємо основний блок і даємо відступи */
@@ -34,6 +35,7 @@ body {
   padding-bottom: 40px !important;
 }
 
+/* Заголовок */
 .app-title { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
 .app-title h1 { margin:0; font-size:28px; font-weight:700; }
 .small-muted { color:var(--muted); font-size:13px; }
@@ -42,7 +44,7 @@ body {
 .card {
   border-radius:10px;
   background: var(--container-bg);
-  border: 1.5px solid var(--card-border);
+  border: 2px solid var(--card-border); /* товща, чіткіша рамка */
   box-shadow: var(--card-shadow);
   padding:12px;
   overflow:hidden;
@@ -51,35 +53,42 @@ body {
   height:100%;
 }
 
-/* Квадратне превʼю */
+/* Квадратне превʼю: гарантія квадрату та обрізка без розтягування */
 .card .thumb {
   width:100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;    /* квадрат */
+  object-fit: cover;      /* обрізає, не розтягує */
   border-radius:6px;
   display:block;
   margin-bottom:10px;
   background:#f7f9fb;
 }
 
+/* Текстові стилі картки */
 .card .title { font-weight:700; font-size:14px; margin-bottom:6px; color:#111827; }
 .card .meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
 .card .price { color: var(--price-color); font-weight:800; font-size:16px; margin-top:auto; }
 .card .card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; }
-.card .buy-btn { background: var(--accent); color: #fff; padding:8px 12px; border-radius:8px; font-weight:700; text-decoration:none; font-size:13px; }
 .small-note { font-size:11px; color:var(--muted); }
+
+/* Кнопки/контейнери внизу сторінки */
+.controls-row { display:flex; gap:8px; align-items:center; }
 
 /* Невеликі відступи колонок у Streamlit */
 .stColumns > div {
   padding-left:6px;
   padding-right:6px;
 }
+
+/* Знижуємо яскравість placeholder'ів щоб не кидались в очі */
+img.thumb[alt="No image"] { filter: none; }
+
 </style>
 """
 
 def sanitize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Позбуваємось сирих 'http' у всіх текстових стовпцях, щоб уникнути автолінкування в браузері.
-       Пропускаємо колонку 'thumbnail' — її ми нормалізували в завантаженні даних.
+    """Позбуваємось сирих 'http' у текстових стовпцях щоб уникнути автолінкування в браузері.
+       Пропускаємо колонку 'thumbnail' — її ми нормалізували у load_data.
     """
     df = df.copy()
     for col in df.select_dtypes(include=['object', 'string']).columns:
@@ -101,7 +110,7 @@ def safe_plotly_chart(fig):
 
 st.markdown(CARD_CSS, unsafe_allow_html=True)
 
-# Заголовок
+# Заголовок (в рамках .block-container)
 st.markdown("""
 <div class="block-container">
   <div class="app-title">
@@ -131,7 +140,8 @@ with st.sidebar:
     ai_cpu = st.selectbox("AI CPU", options=["Усі", "Із AI", "Без AI"])
     max_show = st.number_input("Карток на сторінці", min_value=3, max_value=60, value=12)
     st.markdown("---")
-    st.markdown("Версія інтерфейсу: сучасна карткова сітка • Квадратні превʼю • Пагінація додана")
+    # Замінив рядок про версію інтерфейсу на потрібний підпис
+    st.markdown("Шаблінський Студент 2 курсу")
 
 # Пошук загальний (brand + model)
 search_q = st.text_input("🔎 Пошук (бренд або модель)", value="")
@@ -149,8 +159,8 @@ if search_q and isinstance(search_q, str) and search_q.strip():
     mask = filtered.apply(lambda row: q in f"{row.get('brand','')} {row.get('model','')}".lower(), axis=1)
     filtered = filtered[mask]
 
-# Метрики
-st.markdown('<div class="block-container">')
+# Метрики (обгорнуті в контейнер — без додаткового 'raw' <div>)
+st.markdown('<div class="block-container">', unsafe_allow_html=True)
 st.markdown("### 📊 Загальні метрики")
 col1, col2, col3 = st.columns(3)
 col1.metric("Моделей (відфільтровано)", len(filtered))
@@ -225,6 +235,7 @@ with tab1:
                     <img class="thumb" src="{thumb_url}" alt="{brand} {model}"
                          onerror="this.onerror=null;this.src='https://via.placeholder.com/300x300?text=No+image';">
                     '''
+                    # УНИКНУЛИ кнопку "Купити" — виводимо лише інформацію і мету
                     card_html = f'''
                     <div class="card">
                       {img_html}
@@ -233,12 +244,12 @@ with tab1:
                       <div class="small-note">Код: {code}</div>
                       <div class="card-footer">
                         <div class="price">${price}</div>
-                        <a class="buy-btn" href="#" onclick="window.alert('Купити: {brand} {model}');return false;">Купити</a>
+                        <div></div>
                       </div>
                     </div>
                     '''
                     col.markdown(card_html, unsafe_allow_html=True)
-                    # Кнопка детально працює через Streamlit API (під карткою)
+                    # Кнопка "Детальніше" під карткою залишилась як Streamlit контрол
                     if col.button("Детальніше", key=f"det_{start_idx+i+j}"):
                         st.info(f'Деталі: {brand} {model} — Ціна: ${price}; Екран: {screen}" • Тип: {display_type}; Батарея: {battery}Wh')
     except Exception:

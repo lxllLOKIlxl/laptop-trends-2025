@@ -38,11 +38,16 @@ col3.metric("Середня автономність (Wh)", f"{filtered['battery
 tab1, tab2, tab3 = st.tabs(["📋 Таблиця", "🥧 Частка брендів", "📈 Тренди"])
 
 with tab1:
-    st.dataframe(filtered.sort_values(by='price_usd').reset_index(drop=True), use_container_width=True)
+    # Видаляємо колонку 'url', щоб уникнути автолінкування
+    if 'url' in filtered.columns:
+        filtered_display = filtered.drop(columns=['url'])
+    else:
+        filtered_display = filtered
+    st.dataframe(filtered_display.sort_values(by='price_usd').reset_index(drop=True), use_container_width=True)
 
 with tab2:
     brand_share = compute_brand_share(filtered)
-    fig1 = px.pie(brand_share, names='brand', values='count', title='Розподіл за брендами', template='plotly_dark')
+    fig1 = px.pie(brand_share, names='brand', values='count', title='Розподіл за брендами', template='plotly_white')
     st.plotly_chart(fig1, use_container_width=True)
 
 with tab3:
@@ -57,14 +62,15 @@ with tab3:
             color='metric',
             markers=True,
             line_shape='spline',
-            template='plotly_dark',
+            template='plotly_white',
             title='Тренди: ціна, автономність, OLED'
         )
         fig2.update_layout(
             legend_title_text='Характеристика',
             xaxis_title='Рік',
             yaxis_title='Значення',
-            margin=dict(l=40, r=40, t=60, b=40)
+            margin=dict(l=20, r=20, t=40, b=20),
+            font=dict(size=14)
         )
         st.plotly_chart(fig2, use_container_width=True)
 

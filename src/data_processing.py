@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import logging
+import re
 from typing import List
 
 logger = logging.getLogger(__name__)
@@ -12,42 +13,56 @@ def _split_image_list(val: str) -> List[str]:
     parts = [p.strip() for p in val.split(';') if p.strip()]
     return parts
 
+def _to_raw_github_url(url: str) -> str:
+    """Конвертує blob → raw, імена файлів → RAW_BASE, повертає '' якщо не валідно.
+       (Необов'язково — лишив функцію для зручності, можна підключити при потребі.)
+    """
+    if not isinstance(url, str) or url.strip() == "":
+        return ""
+    url = url.strip()
+    # Якщо повний http(s)
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return ""
+
 def load_data(path: str) -> pd.DataFrame:
-    """Завантаження CSV без звернення до Streamlit у модулі — повертаємо порожній DataFrame при помилці."""
+    """Завантаження CSV; повертаємо порожній DataFrame при помилці."""
     try:
         df = pd.read_csv(path)
     except Exception:
         logger.exception("Error reading CSV")
         return pd.DataFrame()
 
-    # Нормалізація та приведення типів
+    # Нормалізація brand
     try:
         df['brand'] = df.get('brand', pd.Series(dtype='object')).astype(str).str.strip().str.title()
     except Exception:
         df['brand'] = df.get('brand', pd.Series(dtype='object')).astype(str)
 
+    # price
     df['price_usd'] = pd.to_numeric(df.get('price_usd', pd.Series(np.nan)), errors='coerce')
     if df['price_usd'].isna().all():
         return pd.DataFrame()
     df['price_usd'] = df['price_usd'].fillna(df['price_usd'].median())
 
+    # screen size
     df['screen_size_in'] = pd.to_numeric(df.get('screen_size_in', pd.Series(np.nan)), errors='coerce').fillna(13.3)
 
+    # battery
     if 'battery_wh' in df.columns:
         df['battery_wh'] = pd.to_numeric(df['battery_wh'], errors='coerce').fillna(df['battery_wh'].median())
     else:
         df['battery_wh'] = 50.0
 
+    # release
     df['release_year'] = pd.to_numeric(df.get('release_year', pd.Series(np.nan)), errors='coerce').fillna(2025).astype(int)
 
-    # Створюємо колонки image_list і thumbnail
-    # підтримуємо image_url або image_urls (розділені ;)
+    # images: підтримуємо image_url або image_urls (розділені ;)
     df['image_urls_raw'] = df.get('image_url', df.get('image_urls', '')).fillna('').astype(str)
     df['image_list'] = df['image_urls_raw'].apply(_split_image_list)
-    # перша картинка як thumbnail або порожній рядок
     df['thumbnail'] = df['image_list'].apply(lambda lst: lst[0] if lst else '')
 
-    # Булеві ознаки
+    # flags
     df['cpu'] = df.get('cpu', pd.Series(dtype='object')).astype(str)
     df['display_type'] = df.get('display_type', pd.Series(dtype='object')).astype(str)
     df['is_ai_cpu'] = df['cpu'].str.contains('Ultra|AI|Ryzen AI', case=False, na=False)

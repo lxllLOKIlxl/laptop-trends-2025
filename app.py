@@ -36,16 +36,16 @@ body {
   background:var(--card-bg);
   border:1px solid var(--card-border);
   box-shadow: 0 4px 18px rgba(18,36,63,0.06);
-  padding:12px;
+  padding:8px;
   overflow:hidden;
 }
 .card .thumb {
   width:100%;
-  height:90px;
+  height:140px;
   object-fit:cover;
-  border-radius:6px;
+  border-radius:8px;
   display:block;
-  margin-bottom:6px;
+  margin-bottom:8px;
 }
 .card .meta { font-size:14px; color:var(--muted); margin-bottom:6px; }
 .card .title { font-weight:700; font-size:16px; margin-bottom:6px; }

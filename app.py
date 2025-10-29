@@ -41,7 +41,7 @@ body {
 }
 .card .thumb {
   width:100%;
-  aspect-ratio: 20 / 13;
+  aspect-ratio: 50 / 33;
   height:auto;
   object-fit:cover;
   border-radius:8px;

@@ -40,11 +40,10 @@ def load_data(path: str) -> pd.DataFrame:
 
     df['release_year'] = pd.to_numeric(df.get('release_year', pd.Series(np.nan)), errors='coerce').fillna(2025).astype(int)
 
-    # Створюємо колонки image_list і thumbnail
-    # підтримуємо image_url або image_urls (розділені ;)
+    # Підтримка колонок image_url або image_urls (з розділенням ;)
     df['image_urls_raw'] = df.get('image_url', df.get('image_urls', '')).fillna('').astype(str)
     df['image_list'] = df['image_urls_raw'].apply(_split_image_list)
-    # перша картинка як thumbnail або порожній рядок
+    # Перша картинка як thumbnail або порожній рядок
     df['thumbnail'] = df['image_list'].apply(lambda lst: lst[0] if lst else '')
 
     # Булеві ознаки

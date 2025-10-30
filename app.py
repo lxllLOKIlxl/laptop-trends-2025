@@ -193,5 +193,8 @@ with tab3:
 # Export
 st.markdown("### 📤 Експорт результатів")
 st.download_button(
-    "⬇️ Завантажити CSV",
-    data=filtered
+    label="⬇️ Завантажити CSV",
+    data=filtered.to_csv(index=False).encode('utf-8'),
+    file_name="filtered_laptops.csv",
+    mime="text/csv"
+)

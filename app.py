@@ -145,9 +145,21 @@ with tab1:
                 <div class="title">{row.brand} {row.model}</div>
                 <div class="meta">{row.screen_size_in}″ • {row.display_type} • {row.cpu}</div>
                 <div class="price">${row.price_usd:.0f}</div>
-                <a href="#" class="action">Детальніше</a>
             </div>
             """, unsafe_allow_html=True)
+
+            # Streamlit button to show details
+            if st.button(f"Детальніше про {row.model}", key=f"details_{i}"):
+                st.markdown(f"""
+                ### 🔍 Характеристики: {row.brand} {row.model}
+                - 💰 Ціна: **${row.price_usd:.0f}**
+                - 📺 Екран: **{row.screen_size_in}″ {row.display_type}**, {getattr(row, 'refresh_rate', '—')}Hz
+                - 🧠 Процесор: **{row.cpu}**
+                - 🔋 Батарея: **{row.battery_wh} Wh**
+                - 🧮 RAM: **{row.ram_gb} GB**, SSD: **{row.storage_gb} GB**
+                - 📅 Рік випуску: **{row.release_year}**
+                - 🔗 [Перейти на сторінку товару]({row.url})
+                """)
 
 with tab2:
     brand_share = compute_brand_share(filtered)
@@ -182,7 +194,4 @@ with tab3:
 st.markdown("### 📤 Експорт результатів")
 st.download_button(
     "⬇️ Завантажити CSV",
-    data=filtered.to_csv(index=False).encode('utf-8'),
-    file_name="filtered_laptops.csv",
-    mime="text/csv"
-)
+    data=filtered

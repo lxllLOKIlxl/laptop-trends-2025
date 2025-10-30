@@ -223,6 +223,7 @@ with tab1:
             <img src="{thumb_src}" class="thumb" alt="{brand} {model}" loading="lazy"
                  onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';" />
             '''
+            # Removed inactive "Переглянути" action from card_html
             card_html = f'''
             <div class="card" role="article">
               {img_html}
@@ -231,7 +232,6 @@ with tab1:
               <div class="small-note">Код: {code}</div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
                 <div class="price">${price}</div>
-                <a class="action" href="#" onclick="window.alert('Переглянути: {brand} {model}');return false;">Переглянути</a>
               </div>
             </div>
             '''

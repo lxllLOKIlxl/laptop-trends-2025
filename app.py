@@ -8,7 +8,7 @@ from src.data_processing import load_data, filter_data, compute_brand_share, com
 from src.ui.background import render_background
 
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Laptop Trends 2025", layout="wide")
+st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide")
 
 # Sidebar controls for background component (enable/disable and kind)
 with st.sidebar:
@@ -135,7 +135,7 @@ html, body, [data-testid="stAppViewContainer"] > .main {
 )
 
 # Header (render after background so visual stacking is correct)
-st.markdown("## 💻 Laptop Trends 2025")
+st.markdown("## 💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року"")
 st.markdown("Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори")
 
 # Load data
@@ -166,7 +166,7 @@ with st.sidebar:
 
     # signature / note
     st.markdown("---")
-    st.markdown('<div class="sidebar-note">Шаблінський 2 курс ІПЗ\nверсія програми 0.01</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-note">Шаблінський 2 курс ІПЗ\nверсія програми 0.01\Керівник проєкту: Жовнірчик Л.І </div>', unsafe_allow_html=True)
 
 # Filter
 filtered = filter_data(df, brands, (price_min, price_max), (screen_min, screen_max), ai_cpu)
@@ -179,7 +179,7 @@ c2.metric("Середня ціна (USD)", f"{filtered['price_usd'].mean():.0f}"
 c3.metric("Середня автономність (Wh)", f"{filtered['battery_wh'].mean():.0f}" if len(filtered) else "—")
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["🖼️ Каталог", "🥧 Частка брендів", "📈 Тренди"])
+tab1, tab2, tab3 = st.tabs(["🖼️ Каталог", "🥧 Актуальні бренди", "📈 Тренди"])
 
 with tab1:
     display_df = filtered.sort_values(by='price_usd').reset_index(drop=True)
@@ -192,12 +192,12 @@ with tab1:
     # Pager
     pc1, pc2, pc3, pc4 = st.columns([1,3,1,3])
     with pc1:
-        if st.button("⬅️ Prev") and st.session_state.page > 1:
+        if st.button("⬅️ Ліво") and st.session_state.page > 1:
             st.session_state.page -= 1
     with pc2:
         st.markdown(f"**Сторінка {st.session_state.page} / {total_pages}**")
     with pc3:
-        if st.button("Next ➡️") and st.session_state.page < total_pages:
+        if st.button("Право ➡️") and st.session_state.page < total_pages:
             st.session_state.page += 1
     with pc4:
         jump = st.number_input("Перейти на стор.", min_value=1, max_value=total_pages, value=st.session_state.page, step=1, key="jump_page")

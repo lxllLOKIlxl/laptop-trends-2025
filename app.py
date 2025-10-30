@@ -185,13 +185,8 @@ with tab3:
         fig2.update_layout(
             legend_title_text='Характеристика',
             xaxis_title='Рік',
-            yaxis_title='Значення',
-            margin=dict(l=20, r=20, t=40
-            font=dict(size=14)
-        )
-        st.plotly_chart(fig2, use_container_width=True)
-
-# Export
+            yaxis
+            # Export
 st.markdown("### 📤 Експорт результатів")
 st.download_button(
     label="⬇️ Завантажити CSV",

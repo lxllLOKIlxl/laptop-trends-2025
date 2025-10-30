@@ -6,7 +6,7 @@ import math
 from src.data_processing import load_data, filter_data, compute_brand_share, compute_trends
 
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Laptop Trends 2025", layout="wide")
+st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide")
 
 # Inject CSS прямо в код
 st.markdown("""
@@ -78,7 +78,7 @@ html, body, [data-testid="stAppViewContainer"] > .main {
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown("## 💻 Laptop Trends 2025")
+st.markdown("## 💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року")
 st.markdown("Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори")
 
 # Load data
@@ -121,12 +121,12 @@ with tab1:
     # Pager
     pc1, pc2, pc3, pc4 = st.columns([1,3,1,3])
     with pc1:
-        if st.button("⬅️ Prev") and st.session_state.page > 1:
+        if st.button("⬅️ назад") and st.session_state.page > 1:
             st.session_state.page -= 1
     with pc2:
         st.markdown(f"**Сторінка {st.session_state.page} / {total_pages}**")
     with pc3:
-        if st.button("Next ➡️") and st.session_state.page < total_pages:
+        if st.button("вперед ➡️") and st.session_state.page < total_pages:
             st.session_state.page += 1
     with pc4:
         jump = st.number_input("Перейти на стор.", min_value=1, max_value=total_pages, value=st.session_state.page, step=1, key="jump_page")

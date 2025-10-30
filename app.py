@@ -6,47 +6,87 @@ import math
 from src.data_processing import load_data, filter_data, compute_brand_share, compute_trends
 
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року", layout="wide")
+st.set_page_config(page_title="Laptop Trends 2025", layout="wide")
 
-# Inject CSS прямо в код
+# Inject CSS прямо в код — підсилені неонові рамки та стилі
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 :root {
-  --neon: #00e6ff;
+  --neon-1: #00e6ff;
   --neon-2: #7c5cff;
+  --neon-3: #00ff9c;
   --bg: #f4f7fb;
   --panel: #ffffff;
   --muted: #6b7280;
-  --card-shadow: 0 6px 30px rgba(15,23,42,0.06);
+  --card-shadow: 0 6px 40px rgba(15,23,42,0.08);
 }
+/* Base */
 html, body, [data-testid="stAppViewContainer"] > .main {
   background: var(--bg);
   font-family: 'Inter', sans-serif;
   color: #0f172a;
 }
+
+/* Cards */
 .card {
-  border-radius:12px;
+  border-radius:14px;
   background: var(--panel);
-  border: 1.5px solid rgba(0,230,255,0.12);
+  border: 1.5px solid rgba(0,230,255,0.18);
   box-shadow: var(--card-shadow);
-  padding:12px;
+  padding:14px;
   display:flex;
   flex-direction:column;
-  transition: transform .18s ease, box-shadow .18s ease;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  position: relative;
+  z-index: 0;
 }
+
+/* stronger neon glow */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(0,230,255,0.07), rgba(124,92,255,0.06));
+  z-index: -2;
+  filter: blur(8px);
+  opacity: 0.9;
+}
+
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 40px rgba(124,92,255,0.12);
+  transform: translateY(-8px);
+  border-color: rgba(0,230,255,0.95);
+  box-shadow: 0 18px 50px rgba(124,92,255,0.18), 0 8px 30px rgba(0,230,255,0.12);
 }
+
+/* bright neon outline on hover using ::after */
+.card:hover::after {
+  content: "";
+  position: absolute;
+  left: -4px; right: -4px; top: -4px; bottom: -4px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(0,230,255,0.18), rgba(124,92,255,0.18));
+  filter: blur(10px);
+  z-index: -3;
+  pointer-events: none;
+}
+
+/* Thumbnail */
 .thumb {
   width:100%;
-  height:200px;
+  height:220px;
   object-fit:cover;
   object-position:center center;
-  border-radius:8px;
+  border-radius:10px;
   margin-bottom:12px;
+  display:block;
+  background:#f7f9fb;
+  border: 6px solid rgba(255,255,255,0.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
 }
+
+/* Text */
 .title {
   font-weight:700;
   font-size:15px;
@@ -63,6 +103,8 @@ html, body, [data-testid="stAppViewContainer"] > .main {
   font-size:16px;
   margin-top:auto;
 }
+
+/* Buttons */
 .action {
   display:inline-block;
   padding:8px 12px;
@@ -70,15 +112,30 @@ html, body, [data-testid="stAppViewContainer"] > .main {
   font-weight:700;
   font-size:13px;
   color: #fff;
-  background: linear-gradient(90deg, var(--neon), var(--neon-2));
+  background: linear-gradient(90deg, var(--neon-1), var(--neon-2));
   text-decoration:none;
-  box-shadow: 0 8px 20px rgba(124,92,255,0.12);
+  box-shadow: 0 10px 28px rgba(124,92,255,0.12);
 }
+
+/* Sidebar footer / note */
+.sidebar-note {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(0,0,0,0.06);
+  color: var(--muted);
+  font-size:13px;
+  line-height:1.35;
+  white-space: pre-line;
+}
+
+/* small layout tweaks */
+.stColumns > div { padding-left:8px; padding-right:8px; }
+.empty-state { text-align:center; padding:40px 0; color:var(--muted); }
 </style>
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown("## 💻 Інтерактивний вебдодаток для аналізу трендів ноутбуків 2025 року")
+st.markdown("## 💻 Laptop Trends 2025")
 st.markdown("Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори")
 
 # Load data
@@ -96,6 +153,10 @@ with st.sidebar:
     screen_min, screen_max = st.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
     ai_cpu = st.selectbox("AI CPU", ["Усі", "Із AI", "Без AI"])
     max_show = st.number_input("Кількість моделей на сторінці", min_value=3, max_value=60, value=12)
+
+    # Add the requested signature/note at the end of filters
+    st.markdown("---")
+    st.markdown('<div class="sidebar-note">Шаблінський 2 курс ІПЗ\nверсія програми 0.01</div>', unsafe_allow_html=True)
 
 # Filter
 filtered = filter_data(df, brands, (price_min, price_max), (screen_min, screen_max), ai_cpu)
@@ -121,12 +182,12 @@ with tab1:
     # Pager
     pc1, pc2, pc3, pc4 = st.columns([1,3,1,3])
     with pc1:
-        if st.button("⬅️ назад") and st.session_state.page > 1:
+        if st.button("⬅️ Prev") and st.session_state.page > 1:
             st.session_state.page -= 1
     with pc2:
         st.markdown(f"**Сторінка {st.session_state.page} / {total_pages}**")
     with pc3:
-        if st.button("вперед ➡️") and st.session_state.page < total_pages:
+        if st.button("Next ➡️") and st.session_state.page < total_pages:
             st.session_state.page += 1
     with pc4:
         jump = st.number_input("Перейти на стор.", min_value=1, max_value=total_pages, value=st.session_state.page, step=1, key="jump_page")
@@ -137,40 +198,64 @@ with tab1:
     start_idx = (st.session_state.page - 1) * page_size
     end_idx = start_idx + page_size
     page_df = display_df.iloc[start_idx:end_idx]
-    cols = st.columns(4)
-    for i, row in enumerate(page_df.itertuples()):
-        with cols[i % 4]:
-            thumb_src = ""
-            try:
-                thumb_raw = getattr(row, "thumbnail", "") or ""
-                thumb_src = thumb_raw.replace('[:]//', '://') if thumb_raw else "https://via.placeholder.com/600x600?text=No+image"
-            except Exception:
+
+    # render rows (4 columns)
+    for i in range(0, len(page_df), 4):
+        cols = st.columns(4, gap="large")
+        for j, (_, row) in enumerate(page_df.iloc[i:i+4].iterrows()):
+            col = cols[j]
+            # thumbnail safe source
+            thumb = str(row.get('thumbnail', '') or "").strip()
+            if thumb:
+                thumb_src = thumb.replace('[:]//', '://')
+            else:
                 thumb_src = "https://via.placeholder.com/600x600?text=No+image"
 
-            st.markdown(f"""
-            <div class="card">
-                <img src="{thumb_src}" class="thumb" alt="{(getattr(row,'brand','') + ' ' + getattr(row,'model','')).replace('<','').replace('>','')}" loading="lazy"
-                     onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';" />
-                <div class="title">{getattr(row,'brand','')} {getattr(row,'model','')}</div>
-                <div class="meta">{getattr(row,'screen_size_in','—')}″ • {getattr(row,'display_type','—')} • {getattr(row,'cpu','—')}</div>
-                <div class="price">${getattr(row,'price_usd',0):.0f}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            brand = row.get('brand', '')
+            model = row.get('model', '')
+            price = row.get('price_usd', '—')
+            screen = row.get('screen_size_in', '—')
+            display_type = row.get('display_type', '—')
+            cpu = row.get('cpu', '—')
+            code = row.get('code', '') or row.get('sku', '') or ''
 
-            # Details toggle (keep server-side details below the card)
-            # Use a unique key per row (page index + row index)
-            key = f"toggle_{start_idx + i}"
-            show = st.checkbox("🔍 Детальніше", key=key)
+            img_html = f'''
+            <img src="{thumb_src}" class="thumb" alt="{brand} {model}" loading="lazy"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';" />
+            '''
+            card_html = f'''
+            <div class="card" role="article">
+              {img_html}
+              <div class="title">{brand} {model}</div>
+              <div class="meta">{screen}" • {display_type} • {cpu}</div>
+              <div class="small-note">Код: {code}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                <div class="price">${price}</div>
+                <a class="action" href="#" onclick="window.alert('Переглянути: {brand} {model}');return false;">Переглянути</a>
+              </div>
+            </div>
+            '''
+            col.markdown(card_html, unsafe_allow_html=True)
+
+            # server-side details toggle
+            key = f"toggle_{start_idx + i + j}"
+            show = col.checkbox("🔍 Детальніше", key=key)
             if show:
-                st.markdown(f"""
+                product_url = row.get('url', '') or ""
+                if isinstance(product_url, str) and product_url.strip():
+                    url_html = f'<b>🔗 <a href="{product_url}" target="_blank" rel="noopener noreferrer">Сторінка товару</a></b>'
+                else:
+                    url_html = '<b>🔗 Немає посилання</b>'
+
+                col.markdown(f"""
                 <div style="border:1.5px solid #00e6ff; border-radius:10px; padding:12px; margin-top:8px; background: #ffffffcc;">
-                    <b>💰 Ціна:</b> ${getattr(row,'price_usd',0):.0f}<br>
-                    <b>📺 Екран:</b> {getattr(row,'screen_size_in','—')}″ {getattr(row,'display_type','—')}, {getattr(row, 'refresh_rate', '—')}Hz<br>
-                    <b>🧠 Процесор:</b> {getattr(row,'cpu','—')}<br>
-                    <b>🔋 Батарея:</b> {getattr(row,'battery_wh','—')} Wh<br>
-                    <b>🧮 RAM:</b> {getattr(row,'ram_gb','—')} GB, SSD: {getattr(row,'storage_gb','—')} GB<br>
-                    <b>📅 Рік:</b> {getattr(row,'release_year','—')}<br>
-                    <b>🔗 <a href="{getattr(row,'url','#')}" target="_blank">Сторінка товару</a></b>
+                    <b>💰 Ціна:</b> ${price:.0f}<br>
+                    <b>📺 Екран:</b> {screen}" {display_type}<br>
+                    <b>🧠 Процесор:</b> {cpu}<br>
+                    <b>🔋 Батарея:</b> {row.get('battery_wh','—')} Wh<br>
+                    <b>🧮 RAM:</b> {row.get('ram_gb','—')} GB, SSD: {row.get('storage_gb','—')} GB<br>
+                    <b>📅 Рік:</b> {row.get('release_year','—')}<br>
+                    {url_html}
                 </div>
                 """, unsafe_allow_html=True)
 

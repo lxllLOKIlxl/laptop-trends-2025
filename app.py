@@ -3,19 +3,30 @@ import pandas as pd
 import plotly.express as px
 import logging
 import math
+
 from src.data_processing import load_data, filter_data, compute_brand_share, compute_trends
+from src.ui.background import render_background
 
 logger = logging.getLogger(__name__)
 st.set_page_config(page_title="Laptop Trends 2025", layout="wide")
 
-# Inject CSS прямо в код — підсилені неонові рамки та стилі
-st.markdown("""
+# Sidebar controls for background component (enable/disable and kind)
+with st.sidebar:
+    st.header("🔧 Налаштування інтерфейсу")
+    show_bg = st.checkbox("Анімаційний фон", value=True, help="Вмикнути/вимкнути фоновые ефекти")
+    bg_kind = st.selectbox("Тип фону", options=["gradient", "waves", "particles"], index=0, help="gradient = м'який градієнт; waves = SVG-хвилі; particles = частинки")
+
+# Render background (componentized)
+render_background(kind=bg_kind, enabled=show_bg)
+
+# Inject UI CSS (cards, neon glow, sidebar-note, etc.)
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 :root {
   --neon-1: #00e6ff;
   --neon-2: #7c5cff;
-  --neon-3: #00ff9c;
   --bg: #f4f7fb;
   --panel: #ffffff;
   --muted: #6b7280;
@@ -23,7 +34,7 @@ st.markdown("""
 }
 /* Base */
 html, body, [data-testid="stAppViewContainer"] > .main {
-  background: var(--bg);
+  background: transparent; /* background handled by background component */
   font-family: 'Inter', sans-serif;
   color: #0f172a;
 }
@@ -104,19 +115,6 @@ html, body, [data-testid="stAppViewContainer"] > .main {
   margin-top:auto;
 }
 
-/* Buttons */
-.action {
-  display:inline-block;
-  padding:8px 12px;
-  border-radius:10px;
-  font-weight:700;
-  font-size:13px;
-  color: #fff;
-  background: linear-gradient(90deg, var(--neon-1), var(--neon-2));
-  text-decoration:none;
-  box-shadow: 0 10px 28px rgba(124,92,255,0.12);
-}
-
 /* Sidebar footer / note */
 .sidebar-note {
   margin-top: 18px;
@@ -132,9 +130,11 @@ html, body, [data-testid="stAppViewContainer"] > .main {
 .stColumns > div { padding-left:8px; padding-right:8px; }
 .empty-state { text-align:center; padding:40px 0; color:var(--muted); }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# Header
+# Header (render after background so visual stacking is correct)
 st.markdown("## 💻 Laptop Trends 2025")
 st.markdown("Інтерактивний аналіз моделей: ціни, автономність, OLED, AI‑процесори")
 
@@ -145,16 +145,26 @@ if df.empty:
     st.error("❌ Дані не завантажені або CSV-файл порожній.")
     st.stop()
 
-# Sidebar filters
+# Sidebar filters (moved below background controls so background controls remain visible)
 with st.sidebar:
     st.header("🔍 Фільтри")
     brands = st.multiselect("Бренд", sorted(df['brand'].unique()), default=sorted(df['brand'].unique())[:5])
-    price_min, price_max = st.slider("Ціна (USD)", int(df['price_usd'].min()), int(df['price_usd'].max()), (int(df['price_usd'].min()), int(df['price_usd'].max())))
-    screen_min, screen_max = st.slider("Діагональ екрану (in)", float(df['screen_size_in'].min()), float(df['screen_size_in'].max()), (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())))
+    price_min, price_max = st.slider(
+        "Ціна (USD)",
+        int(df['price_usd'].min()),
+        int(df['price_usd'].max()),
+        (int(df['price_usd'].min()), int(df['price_usd'].max())),
+    )
+    screen_min, screen_max = st.slider(
+        "Діагональ екрану (in)",
+        float(df['screen_size_in'].min()),
+        float(df['screen_size_in'].max()),
+        (float(df['screen_size_in'].min()), float(df['screen_size_in'].max())),
+    )
     ai_cpu = st.selectbox("AI CPU", ["Усі", "Із AI", "Без AI"])
     max_show = st.number_input("Кількість моделей на сторінці", min_value=3, max_value=60, value=12)
 
-    # Add the requested signature/note at the end of filters
+    # signature / note
     st.markdown("---")
     st.markdown('<div class="sidebar-note">Шаблінський 2 курс ІПЗ\nверсія програми 0.01</div>', unsafe_allow_html=True)
 
@@ -223,7 +233,7 @@ with tab1:
             <img src="{thumb_src}" class="thumb" alt="{brand} {model}" loading="lazy"
                  onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';" />
             '''
-            # Removed inactive "Переглянути" action from card_html
+            # card without inactive action
             card_html = f'''
             <div class="card" role="article">
               {img_html}

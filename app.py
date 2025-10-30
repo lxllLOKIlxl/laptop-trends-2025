@@ -148,18 +148,19 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-            # Streamlit button to show details
-            if st.button(f"Детальніше про {row.model}", key=f"details_{i}"):
+            show = st.toggle(f"🔍 Детальніше", key=f"toggle_{i}")
+            if show:
                 st.markdown(f"""
-                ### 🔍 Характеристики: {row.brand} {row.model}
-                - 💰 Ціна: **${row.price_usd:.0f}**
-                - 📺 Екран: **{row.screen_size_in}″ {row.display_type}**, {getattr(row, 'refresh_rate', '—')}Hz
-                - 🧠 Процесор: **{row.cpu}**
-                - 🔋 Батарея: **{row.battery_wh} Wh**
-                - 🧮 RAM: **{row.ram_gb} GB**, SSD: **{row.storage_gb} GB**
-                - 📅 Рік випуску: **{row.release_year}**
-                - 🔗 [Перейти на сторінку товару]({row.url})
-                """)
+                <div style="border:1.5px solid #00e6ff; border-radius:10px; padding:12px; margin-top:8px; background: #ffffffcc;">
+                    <b>💰 Ціна:</b> ${row.price_usd:.0f}<br>
+                    <b>📺 Екран:</b> {row.screen_size_in}″ {row.display_type}, {getattr(row, 'refresh_rate', '—')}Hz<br>
+                    <b>🧠 Процесор:</b> {row.cpu}<br>
+                    <b>🔋 Батарея:</b> {row.battery_wh} Wh<br>
+                    <b>🧮 RAM:</b> {row.ram_gb} GB, SSD: {row.storage_gb} GB<br>
+                    <b>📅 Рік:</b> {row.release_year}<br>
+                    <b>🔗 <a href="{row.url}" target="_blank">Сторінка товару</a></b>
+                </div>
+                """, unsafe_allow_html=True)
 
 with tab2:
     brand_share = compute_brand_share(filtered)
@@ -185,7 +186,7 @@ with tab3:
             legend_title_text='Характеристика',
             xaxis_title='Рік',
             yaxis_title='Значення',
-            margin=dict(l=20, r=20, t=40, b=20),
+            margin=dict(l=20, r=20, t=40
             font=dict(size=14)
         )
         st.plotly_chart(fig2, use_container_width=True)

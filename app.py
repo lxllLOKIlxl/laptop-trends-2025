@@ -43,6 +43,7 @@ html, body, [data-testid="stAppViewContainer"] > .main {
   width:100%;
   height:200px;
   object-fit:cover;
+  object-position:center center;
   border-radius:8px;
   margin-bottom:12px;
 }
@@ -139,26 +140,37 @@ with tab1:
     cols = st.columns(4)
     for i, row in enumerate(page_df.itertuples()):
         with cols[i % 4]:
+            thumb_src = ""
+            try:
+                thumb_raw = getattr(row, "thumbnail", "") or ""
+                thumb_src = thumb_raw.replace('[:]//', '://') if thumb_raw else "https://via.placeholder.com/600x600?text=No+image"
+            except Exception:
+                thumb_src = "https://via.placeholder.com/600x600?text=No+image"
+
             st.markdown(f"""
             <div class="card">
-                <img src="{row.thumbnail.replace('[:]//', '://')}" class="thumb" />
-                <div class="title">{row.brand} {row.model}</div>
-                <div class="meta">{row.screen_size_in}″ • {row.display_type} • {row.cpu}</div>
-                <div class="price">${row.price_usd:.0f}</div>
+                <img src="{thumb_src}" class="thumb" alt="{(getattr(row,'brand','') + ' ' + getattr(row,'model','')).replace('<','').replace('>','')}" loading="lazy"
+                     onerror="this.onerror=null;this.src='https://via.placeholder.com/600x600?text=No+image';" />
+                <div class="title">{getattr(row,'brand','')} {getattr(row,'model','')}</div>
+                <div class="meta">{getattr(row,'screen_size_in','—')}″ • {getattr(row,'display_type','—')} • {getattr(row,'cpu','—')}</div>
+                <div class="price">${getattr(row,'price_usd',0):.0f}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            show = st.toggle(f"🔍 Детальніше", key=f"toggle_{i}")
+            # Details toggle (keep server-side details below the card)
+            # Use a unique key per row (page index + row index)
+            key = f"toggle_{start_idx + i}"
+            show = st.checkbox("🔍 Детальніше", key=key)
             if show:
                 st.markdown(f"""
                 <div style="border:1.5px solid #00e6ff; border-radius:10px; padding:12px; margin-top:8px; background: #ffffffcc;">
-                    <b>💰 Ціна:</b> ${row.price_usd:.0f}<br>
-                    <b>📺 Екран:</b> {row.screen_size_in}″ {row.display_type}, {getattr(row, 'refresh_rate', '—')}Hz<br>
-                    <b>🧠 Процесор:</b> {row.cpu}<br>
-                    <b>🔋 Батарея:</b> {row.battery_wh} Wh<br>
-                    <b>🧮 RAM:</b> {row.ram_gb} GB, SSD: {row.storage_gb} GB<br>
-                    <b>📅 Рік:</b> {row.release_year}<br>
-                    <b>🔗 <a href="{row.url}" target="_blank">Сторінка товару</a></b>
+                    <b>💰 Ціна:</b> ${getattr(row,'price_usd',0):.0f}<br>
+                    <b>📺 Екран:</b> {getattr(row,'screen_size_in','—')}″ {getattr(row,'display_type','—')}, {getattr(row, 'refresh_rate', '—')}Hz<br>
+                    <b>🧠 Процесор:</b> {getattr(row,'cpu','—')}<br>
+                    <b>🔋 Батарея:</b> {getattr(row,'battery_wh','—')} Wh<br>
+                    <b>🧮 RAM:</b> {getattr(row,'ram_gb','—')} GB, SSD: {getattr(row,'storage_gb','—')} GB<br>
+                    <b>📅 Рік:</b> {getattr(row,'release_year','—')}<br>
+                    <b>🔗 <a href="{getattr(row,'url','#')}" target="_blank">Сторінка товару</a></b>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -168,25 +180,34 @@ with tab2:
     st.plotly_chart(fig1, use_container_width=True)
 
 with tab3:
-    trend_df = compute_trends(df)
-    if trend_df.empty:
-        st.warning("Немає даних для побудови трендів.")
-    else:
-        fig2 = px.line(
-            trend_df,
-            x='year',
-            y='value',
-            color='metric',
-            markers=True,
-            line_shape='spline',
-            template='plotly_white',
-            title='Тренди: ціна, автономність, OLED'
-        )
-        fig2.update_layout(
-            legend_title_text='Характеристика',
-            xaxis_title='Рік',
-            yaxis
-            # Export
+    try:
+        trend_df = compute_trends(df)
+        if trend_df.empty:
+            st.warning("Немає даних для побудови трендів.")
+        else:
+            fig2 = px.line(
+                trend_df,
+                x='year',
+                y='value',
+                color='metric',
+                markers=True,
+                line_shape='spline',
+                template='plotly_white',
+                title='Тренди: ціна, автономність, OLED'
+            )
+            fig2.update_layout(
+                legend_title_text='Характеристика',
+                xaxis_title='Рік',
+                yaxis_title='Значення',
+                margin=dict(l=20, r=20, t=40, b=20),
+                font=dict(size=14)
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+    except Exception:
+        logger.exception("Error in trends")
+        st.error("Не вдалося побудувати тренди. Подробиці в логах.")
+
+# Export
 st.markdown("### 📤 Експорт результатів")
 st.download_button(
     label="⬇️ Завантажити CSV",
